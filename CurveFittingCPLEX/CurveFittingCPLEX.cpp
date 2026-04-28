@@ -43,186 +43,210 @@ public:
 
     // 1. Linear fit y = bx + a, minimize sum |yi - (bxi + a)|
     void solveLinearSumAbs() {
-        IloModel model(env);
+        try {
+            IloModel model(env);
 
-        // line parameters
-        IloNumVar a(env, -IloInfinity, IloInfinity);
-        IloNumVar b(env, -IloInfinity, IloInfinity);
+            // line parameters
+            IloNumVar a(env, -IloInfinity, IloInfinity);
+            IloNumVar b(env, -IloInfinity, IloInfinity);
 
-        int n = data.size();
+            int n = data.size();
 
-        // auxiliary variables for absolute deviations
-        IloNumVarArray d(env, n, 0, IloInfinity);
+            // auxiliary variables for absolute deviations
+            IloNumVarArray d(env, n, 0, IloInfinity);
 
-        for (int i = 0; i < n; i++) {
-            IloExpr pred = b * data.x[i] + a;
+            for (int i = 0; i < n; i++) {
+                IloExpr pred = b * data.x[i] + a;
 
-            model.add(data.y[i] - pred <= d[i]);
-            model.add(pred - data.y[i] <= d[i]);
+                model.add(data.y[i] - pred <= d[i]);
+                model.add(pred - data.y[i] <= d[i]);
 
-            pred.end();
+                pred.end();
+            }
+
+            // objective: minimize sum of deviations
+            IloExpr obj(env);
+            for (int i = 0; i < n; i++)
+                obj += d[i];
+
+            model.add(IloMinimize(env, obj));
+            obj.end();
+
+            cout << "\n=====================================\n";
+            cout << "Method 1: Linear fit (min sum abs deviations)\n";
+            cout << "Model: y = bx + a\n";
+            cout << "=====================================\n";
+
+            IloCplex cplex(model);
+            if (!cplex.solve()) {
+                cout << "No solution found" << endl;
+                return;
+            }
+
+            cout << "\nLinear |sum deviations|" << endl;
+            cout << "a = " << cplex.getValue(a) << endl;
+            cout << "b = " << cplex.getValue(b) << endl;
         }
-
-        // objective: minimize sum of deviations
-        IloExpr obj(env);
-        for (int i = 0; i < n; i++)
-            obj += d[i];
-
-        model.add(IloMinimize(env, obj));
-        obj.end();
-
-        cout << "\n=====================================\n";
-        cout << "Method 1: Linear fit (min sum abs deviations)\n";
-        cout << "Model: y = bx + a\n";
-        cout << "=====================================\n";
-
-        IloCplex cplex(model);
-        if (!cplex.solve()) {
-            cout << "No solution found" << endl;
-            return;
+        catch (...) {
+            env.end();
+            throw;
         }
-
-        cout << "\nLinear |sum deviations|" << endl;
-        cout << "a = " << cplex.getValue(a) << endl;
-        cout << "b = " << cplex.getValue(b) << endl;
     }
 
     // 2. Linear fit y = bx + a, minimize max |yi - (bxi + a)|
     void solveLinearMaxDev() {
-        IloModel model(env);
+        try {
+            IloModel model(env);
 
-        // line parameters
-        IloNumVar a(env, -IloInfinity, IloInfinity);
-        IloNumVar b(env, -IloInfinity, IloInfinity);
+            // line parameters
+            IloNumVar a(env, -IloInfinity, IloInfinity);
+            IloNumVar b(env, -IloInfinity, IloInfinity);
 
-        int n = data.size();
+            int n = data.size();
 
-        // variable representing maximum deviation
-        IloNumVar t(env, 0, IloInfinity);
+            // variable representing maximum deviation
+            IloNumVar t(env, 0, IloInfinity);
 
-        for (int i = 0; i < n; i++) {
-            IloExpr pred = b * data.x[i] + a;
+            for (int i = 0; i < n; i++) {
+                IloExpr pred = b * data.x[i] + a;
 
-            model.add(data.y[i] - pred <= t);
-            model.add(pred - data.y[i] <= t);
+                model.add(data.y[i] - pred <= t);
+                model.add(pred - data.y[i] <= t);
 
-            pred.end();
+                pred.end();
+            }
+
+            // objective: minimize maximum deviation
+            model.add(IloMinimize(env, t));
+
+            cout << "\n=====================================\n";
+            cout << "Method 2: Linear fit (min max deviation)\n";
+            cout << "Model: y = bx + a\n";
+            cout << "=====================================\n";
+
+            IloCplex cplex(model);
+            if (!cplex.solve()) {
+                cout << "No solution found" << endl;
+                return;
+            }
+
+            cout << "\nLinear |max deviation|" << endl;
+            cout << "a = " << cplex.getValue(a) << endl;
+            cout << "b = " << cplex.getValue(b) << endl;
+            cout << "max deviation = " << cplex.getValue(t) << endl;
         }
-
-        // objective: minimize maximum deviation
-        model.add(IloMinimize(env, t));
-
-        cout << "\n=====================================\n";
-        cout << "Method 2: Linear fit (min max deviation)\n";
-        cout << "Model: y = bx + a\n";
-        cout << "=====================================\n";
-
-        IloCplex cplex(model);
-        if (!cplex.solve()) {
-            cout << "No solution found" << endl;
-            return;
+        catch (...) {
+            env.end();
+            throw;
         }
-
-        cout << "\nLinear |max deviation|" << endl;
-        cout << "a = " << cplex.getValue(a) << endl;
-        cout << "b = " << cplex.getValue(b) << endl;
-        cout << "max deviation = " << cplex.getValue(t) << endl;
     }
 
     // 3.1. Quadratic fit y = cx^2 + bx + a, minimize sum |yi - (cxi^2 + bxi + a)|
     void solveQuadraticSumAbs() {
-        IloModel model(env);
+        try {
+            IloModel model(env);
 
-        // quadratic coefficients
-        IloNumVar a(env, -IloInfinity, IloInfinity);
-        IloNumVar b(env, -IloInfinity, IloInfinity);
-        IloNumVar c(env, -IloInfinity, IloInfinity);
+            // quadratic coefficients
+            IloNumVar a(env, -IloInfinity, IloInfinity);
+            IloNumVar b(env, -IloInfinity, IloInfinity);
+            IloNumVar c(env, -IloInfinity, IloInfinity);
 
-        int n = data.size();
+            int n = data.size();
 
-        // absolute deviation variables
-        IloNumVarArray d(env, n, 0, IloInfinity);
+            // absolute deviation variables
+            IloNumVarArray d(env, n, 0, IloInfinity);
 
-        for (int i = 0; i < n; i++) {
-            IloExpr pred = c * data.x[i] * data.x[i] +
-                b * data.x[i] +
-                a;
+            for (int i = 0; i < n; i++) {
+                IloExpr pred = c * data.x[i] * data.x[i] +
+                    b * data.x[i] +
+                    a;
 
-            model.add(data.y[i] - pred <= d[i]);
-            model.add(pred - data.y[i] <= d[i]);
+                model.add(data.y[i] - pred <= d[i]);
+                model.add(pred - data.y[i] <= d[i]);
 
-            pred.end();
+                pred.end();
+            }
+
+            // objective: minimize total deviation
+            IloExpr obj(env);
+            for (int i = 0; i < n; i++)
+                obj += d[i];
+
+            model.add(IloMinimize(env, obj));
+            obj.end();
+
+            cout << "\n=====================================\n";
+            cout << "Method 3.1: Quadratic fit (min sum abs deviations)\n";
+            cout << "Model: y = cx^2 + bx + a\n";
+            cout << "=====================================\n";
+
+            IloCplex cplex(model);
+            if (!cplex.solve()) {
+                cout << "No solution found" << endl;
+                return;
+            }
+
+            cout << "\nQuadratic |sum deviations|" << endl;
+            cout << "a = " << cplex.getValue(a) << endl;
+            cout << "b = " << cplex.getValue(b) << endl;
+            cout << "c = " << cplex.getValue(c) << endl;
         }
-
-        // objective: minimize total deviation
-        IloExpr obj(env);
-        for (int i = 0; i < n; i++)
-            obj += d[i];
-
-        model.add(IloMinimize(env, obj));
-        obj.end();
-
-        cout << "\n=====================================\n";
-        cout << "Method 3.1: Quadratic fit (min sum abs deviations)\n";
-        cout << "Model: y = cx^2 + bx + a\n";
-        cout << "=====================================\n";
-
-        IloCplex cplex(model);
-        if (!cplex.solve()) {
-            cout << "No solution found" << endl;
-            return;
+        catch (...) {
+            env.end();
+            throw;
         }
-
-        cout << "\nQuadratic |sum deviations|" << endl;
-        cout << "a = " << cplex.getValue(a) << endl;
-        cout << "b = " << cplex.getValue(b) << endl;
-        cout << "c = " << cplex.getValue(c) << endl;
     }
 
     // 3.2. Quadratic fit y = cx^2 + bx + a, minimize max |yi - (cxi^2 + bxi + a)|
     void solveQuadraticMaxDev() {
-        IloModel model(env);
+        try {
+            IloModel model(env);
 
-        // quadratic coefficients
-        IloNumVar a(env, -IloInfinity, IloInfinity);
-        IloNumVar b(env, -IloInfinity, IloInfinity);
-        IloNumVar c(env, -IloInfinity, IloInfinity);
+            // quadratic coefficients
+            IloNumVar a(env, -IloInfinity, IloInfinity);
+            IloNumVar b(env, -IloInfinity, IloInfinity);
+            IloNumVar c(env, -IloInfinity, IloInfinity);
 
-        int n = data.size();
+            int n = data.size();
 
-        // variable for maximum deviation
-        IloNumVar t(env, 0, IloInfinity);
+            // variable for maximum deviation
+            IloNumVar t(env, 0, IloInfinity);
 
-        for (int i = 0; i < n; i++) {
-            IloExpr pred = c * data.x[i] * data.x[i] +
-                b * data.x[i] +
-                a;
+            for (int i = 0; i < n; i++) {
+                IloExpr pred = c * data.x[i] * data.x[i] +
+                    b * data.x[i] +
+                    a;
 
-            model.add(data.y[i] - pred <= t);
-            model.add(pred - data.y[i] <= t);
+                model.add(data.y[i] - pred <= t);
+                model.add(pred - data.y[i] <= t);
 
-            pred.end();
+                pred.end();
+            }
+
+            // objective: minimize maximum deviation
+            model.add(IloMinimize(env, t));
+
+            cout << "\n=====================================\n";
+            cout << "Method 3.2: Quadratic fit (min max deviation)\n";
+            cout << "Model: y = cx^2 + bx + a\n";
+            cout << "=====================================\n";
+
+            IloCplex cplex(model);
+            if (!cplex.solve()) {
+                cout << "No solution found" << endl;
+                return;
+            }
+
+            cout << "\nQuadratic |max deviation|" << endl;
+            cout << "a = " << cplex.getValue(a) << endl;
+            cout << "b = " << cplex.getValue(b) << endl;
+            cout << "c = " << cplex.getValue(c) << endl;
+            cout << "max deviation = " << cplex.getValue(t) << endl;
         }
-
-        // objective: minimize maximum deviation
-        model.add(IloMinimize(env, t));
-
-        cout << "\n=====================================\n";
-        cout << "Method 3.2: Quadratic fit (min max deviation)\n";
-        cout << "Model: y = cx^2 + bx + a\n";
-        cout << "=====================================\n";
-
-        IloCplex cplex(model);
-        if (!cplex.solve()) {
-            cout << "No solution found" << endl;
-            return;
+        catch (...) {
+            env.end();
+            throw;
         }
-
-        cout << "\nQuadratic |max deviation|" << endl;
-        cout << "a = " << cplex.getValue(a) << endl;
-        cout << "b = " << cplex.getValue(b) << endl;
-        cout << "c = " << cplex.getValue(c) << endl;
-        cout << "max deviation = " << cplex.getValue(t) << endl;
     }
 };
 
@@ -241,6 +265,12 @@ int main() {
     }
     catch (IloException& e) {
         cerr << "CPLEX error: " << e << endl;
+    }
+    catch (const exception& e) {
+        cerr << "Standard exception: " << e.what() << endl;
+    }
+    catch (...) {
+        cerr << "Unknown error" << endl;
     }
 
     env.end();
