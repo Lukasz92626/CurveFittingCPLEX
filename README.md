@@ -4,7 +4,7 @@ Implementation of **Exercise 12.11 – Curve Fitting** from the book:
 
 **H. Paul Williams – *Model Building in Mathematical Programming***
 
-The program fits models to a dataset ((x_i, y_i)) using **IBM CPLEX**.
+The program fits models to a dataset using **IBM CPLEX**.
 
 ## Models
 
@@ -24,7 +24,7 @@ Absolute values are linearized and solved as **linear programming problems in CP
 
 Requirements:
 
-* C++ compiler
+* **C++ compiler**
 * **IBM ILOG CPLEX Optimization Studio**
 * **CMake**
 
