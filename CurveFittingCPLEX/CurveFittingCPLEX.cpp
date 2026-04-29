@@ -88,7 +88,7 @@ public:
             cout << "b = " << cplex.getValue(b) << endl;
         }
         catch (...) {
-            env.end();
+            cerr << "Error in solveLinearSumAbs" << endl;
             throw;
         }
     }
@@ -136,7 +136,7 @@ public:
             cout << "max deviation = " << cplex.getValue(t) << endl;
         }
         catch (...) {
-            env.end();
+            cerr << "Error in solveLinearMaxDev" << endl;
             throw;
         }
     }
@@ -192,7 +192,7 @@ public:
             cout << "c = " << cplex.getValue(c) << endl;
         }
         catch (...) {
-            env.end();
+            cerr << "Error in solveQuadraticSumAbs" << endl;
             throw;
         }
     }
@@ -244,7 +244,7 @@ public:
             cout << "max deviation = " << cplex.getValue(t) << endl;
         }
         catch (...) {
-            env.end();
+            cerr << "Error in solveQuadraticMaxDev" << endl;
             throw;
         }
     }
